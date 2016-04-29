@@ -334,12 +334,12 @@ function generateDocumentation(fileNames:string[]):void {
     for (const sourceFile of program.getSourceFiles()) {
         // Walk the tree to search for classes
         console.log('----' + sourceFile.fileName + '----');
-        if (isIn(fileNames, sourceFile.fileName)) {
+        //if (isIn(fileNames, sourceFile.fileName)) {
             ts.forEachChild(sourceFile, (node) => {
                 var newClasses = visit(node, sourceFile);
                 info = info.concat(newClasses);
             })
-        }
+        //}
     }
 
     var graph = {
@@ -352,6 +352,8 @@ function generateDocumentation(fileNames:string[]):void {
 
     var classMap:{[key:string]:any} = Object.create(null);
 
+    //TODO gitignore
+    //TODO move out mapper from compiler data to D3 data
     //TODO refactor to work with real objects instead of many arguments
 
     function getClass(className:string, label:string):any {
@@ -383,7 +385,7 @@ function generateDocumentation(fileNames:string[]):void {
     function addCall(callerClass:string, callerMethod:string, calledClass:string, calledProperty:string, callLabel:string, callerLabel:string, calledLabel:string, callerClassText:string, calledClassText:string) {
         var target = getProperty(callerClass, callerMethod, callerLabel, callerClassText);
         var source = getProperty(calledClass, calledProperty, calledLabel, calledClassText);
-        console.log(callerClass, '.', callerMethod, '->', calledClass, '.', calledProperty);
+        //console.log(callerClass, '.', callerMethod, '->', calledClass, '.', calledProperty);
         graph.links.push({
             target: source.index,
             source: target.index,
@@ -481,6 +483,7 @@ function generateDocumentation(fileNames:string[]):void {
     function getMethods(node:ts.Node, className:string, file:ts.SourceFile):{[key:string]:IMethod} {
         var methods:{[key:string]:IMethod} = {};
         ts.forEachChild(node, (node) => {
+            //TODO public properties
             if (node.kind == ts.SyntaxKind.Constructor) {
                 methods['Constructor'] = {
                     text: node.getText(),
@@ -511,6 +514,7 @@ function generateDocumentation(fileNames:string[]):void {
                 node.kind == ts.SyntaxKind.PropertyAccessExpression
             ) {
                 res.push(getCallTarget(node, className, file));
+                res = res.concat(getCalls(node, className, file));
             } else {
                 res = res.concat(getCalls(node, className, file));
             }
@@ -530,7 +534,7 @@ function generateDocumentation(fileNames:string[]):void {
             target = target.split('typeof ')[1];
         }
 
-        console.log(propertyOwner.getText(), target, checker.typeToString(type));
+        //console.log(propertyOwner.getText(), target, checker.typeToString(type));
 
         if (target == 'this') {
             target = className;
@@ -542,7 +546,7 @@ function generateDocumentation(fileNames:string[]):void {
 
 
         var lineAndPos = file.getLineAndCharacterOfPosition(node.getStart());
-        console.log(propertyOwner.getText(), target);
+        //console.log(propertyOwner.getText(), target);
         return {
             text: `(${lineAndPos.line}:${lineAndPos.character}) ${file.text.split('\n')[lineAndPos.line]}\n
             Propert: ${node.getText()}\n
@@ -565,7 +569,7 @@ function generateDocumentation(fileNames:string[]):void {
     }
 
     function visitStructure(node:ts.Node, prefix = '') {
-        //console.log(prefix + map[node.kind] + ": " + node.getText());
+        console.log(prefix + map[node.kind] + ": " + node.getText());
         ts.forEachChild(node, (node) => {
             visitStructure(node, prefix + '-');
         });

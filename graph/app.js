@@ -115,7 +115,7 @@ function parseDunnart() {
             return d.label;
         });
 
-    var margin = 6, pad = 12;
+    var margin = 12, pad = 24;
     var node = nodesLayer.selectAll(".node")
         .data(graph.nodes)
         .enter().append("rect")
@@ -206,8 +206,8 @@ function parseDunnart() {
             })
             .attr('stroke-opacity', 0.5)
             .attr('stroke-dasharray', function(d) {
-               return d.source.type=='class' || d.target.type =='class' ? '5,5' : '';
-            });
+               return d.source.type=='class' || d.target.type =='class' ? '2,2' : '';
+            })
 
         label.each(function (d) {
             var b = this.getBBox();
@@ -230,16 +230,16 @@ function parseDunnart() {
 
         group
             .attr("x", function (d) {
-                return d.bounds.x+5;
+                return d.bounds.x+pad/2;
             })
             .attr("y", function (d) {
-                return d.bounds.y+5;
+                return d.bounds.y+pad/2;
             })
             .attr("width", function (d) {
-                return d.bounds.width()-10;
+                return d.bounds.width()-pad;
             })
             .attr("height", function (d) {
-                return d.bounds.height()-10;
+                return d.bounds.height()-pad;
             });
 
         label.attr("transform", function (d) {
