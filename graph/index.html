@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<!-- saved from url=(0071)http://marvl.infotech.monash.edu/webcola/examples/sucrosebreakdown.html -->
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <title>Metabolic pathway</title>
+    <style>
+        @import url(../style.css);
+
+        .background {
+            stroke: white;
+            stroke-width: 1px;
+            fill: white;
+        }
+
+        .node {
+            stroke: black;
+            stroke-width: 1px;
+            cursor: move;
+            fill: beige;
+        }
+
+        .link {
+            fill: none;
+            stroke: #000;
+            stroke-width: 3px;
+            opacity: 0.7;
+            marker-end: url(#end-arrow);
+        }
+
+        .label {
+            fill: black;
+            font-family: Verdana;
+            font-size: 25px;
+            text-anchor: middle;
+            cursor: move;
+        }
+
+        .guideline {
+            stroke: orangered;
+            stroke-width: 4px;
+        }
+
+        svg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            z-index: 10;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+    </style>
+    <link type="text/css" rel="stylesheet" href="chrome-extension://dagdlcijhfbmgkjokkjicnnfimlebcll/style.css">
+    <script type="text/javascript" charset="utf-8"
+            src="chrome-extension://dagdlcijhfbmgkjokkjicnnfimlebcll/page_context.js"></script>
+</head>
+<body onload="parseDunnart()" screen_capture_injected="true" cz-shortcut-listen="true">
+<script src="3rdparty/d3.v3.js"></script>
+<script src="3rdparty/cola.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<div class="controls">
+</div>
+</body>
+</html>
