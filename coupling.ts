@@ -3,6 +3,7 @@
 import {writeFileSync} from "fs";
 import * as ts from "typescript";
 
+//TODO try to remove tokens
 var tokens = (function () {
     return `Unknown = 0,
 EndOfFileToken = 1,
@@ -313,7 +314,7 @@ tokens.split(',\n').map((token:string) => {
     return pair;
 });
 
-function isIn(fileNames:string[], fileName:string) {
+/*function isIn(fileNames:string[], fileName:string) {
     for (var i = 0; i < fileNames.length; i++) {
         var name = fileNames[i];
         if (fileName.indexOf(fileName) > -1) {
@@ -321,7 +322,7 @@ function isIn(fileNames:string[], fileName:string) {
         }
     }
     return false;
-}
+}*/
 
 function generateDocumentation(fileNames:string[]):void {
     // Build a program using the set of root file names in fileNames
@@ -334,116 +335,19 @@ function generateDocumentation(fileNames:string[]):void {
     for (const sourceFile of program.getSourceFiles()) {
         // Walk the tree to search for classes
         console.log('----' + sourceFile.fileName + '----');
-        //if (isIn(fileNames, sourceFile.fileName)) {
             ts.forEachChild(sourceFile, (node) => {
                 var newClasses = visit(node, sourceFile);
                 info = info.concat(newClasses);
             })
-        //}
     }
 
-    var graph = {
-        nodes: [],
-        links: [],
-        groups: [],
-        constraints: []
-    };
-
-
-    var classMap:{[key:string]:any} = Object.create(null);
-
-    //TODO gitignore
-    //TODO move out mapper from compiler data to D3 data
-    //TODO refactor to work with real objects instead of many arguments
-
-    function getClass(className:string, label:string):any {
-        if (!classMap[className]) {
-            var group = {
-                "leaves": [],
-                "style": "fill:#ffdd3c;fill-opacity:0.37254902000000001;stroke:#ffdd3c;stroke-opacity:1",
-                "padding": 10,
-                "label": className
-            };
-            graph.groups.push(group);
-
-            var node = {
-                "label": className,
-                "text": label,
-                "type": 'class'
-            };
-            var index = graph.nodes.push(node) - 1;
-            group.leaves.push(index);
-            var cls = classMap[className] = Object.create(null);
-            cls.group = group;
-            cls.index = index;
-            cls.node = node;
-            cls.methods = Object.create(null);
-        }
-        return classMap[className];
-    }
-
-    function addCall(callerClass:string, callerMethod:string, calledClass:string, calledProperty:string, callLabel:string, callerLabel:string, calledLabel:string, callerClassText:string, calledClassText:string) {
-        var target = getProperty(callerClass, callerMethod, callerLabel, callerClassText);
-        var source = getProperty(calledClass, calledProperty, calledLabel, calledClassText);
-        //console.log(callerClass, '.', callerMethod, '->', calledClass, '.', calledProperty);
-        graph.links.push({
-            target: source.index,
-            source: target.index,
-            label: callLabel
-        });
-    }
-
-    function getProperty(className:string, propertyName:string, text:string, classLabel:string) {
-        var cls = getClass(className, classLabel);
-        if (!cls.methods[propertyName]) {
-            var node = {
-                "label": propertyName,
-                "text": text,
-                "type": 'method'
-            };
-            var index = graph.nodes.push(node) - 1;
-            cls.group.leaves.push(index);
-            cls.methods[propertyName] = {
-                node: node,
-                index: index
-            };
-
-            graph.links.push({
-                target: index,
-                source: cls.index
-            });
-
-            if (index == undefined) {
-                console.log('getProperty', arguments);
-            }
-        }
-        return cls.methods[propertyName];
-    }
-
-    var res = '';
-    for (var i = 0; i < info.length; i++) {
-        var cls:IClass = info[i];
-        Object.keys(cls.methods).forEach((key) => {
-            cls.methods[key].calls.forEach((call:ICall) => {
-                if (cls.name != call.target) {
-                    addCall(cls.name, key, call.target, call.name, call.text, cls.methods[key].text, '', cls.text, '');
-                }
-            });
-        })
-    }
-
-
-    //console.log(JSON.stringify(info));
-    console.log(res);
-
-    writeFileSync('graph/data.js', 'window.data = ' + JSON.stringify(graph), 'UTF-8');
+    writeFileSync('graph/data.js', 'window.data = ' + JSON.stringify(info), 'UTF-8');
     var childProcess = require('child_process');
     childProcess.exec('start chrome ./graph/index.html');
 
     interface IClass {
         text:string;
         name:string;
-        group:any;
         methods:{[key:string]:IMethod};
     }
 
@@ -473,7 +377,6 @@ function generateDocumentation(fileNames:string[]):void {
     function visitClass(node:ts.Node, file:ts.SourceFile):IClass {
         var name = getIdentifierName(node);
         return {
-            group: undefined,
             name: name,
             methods: getMethods(node, name, file),
             text: node.getText()

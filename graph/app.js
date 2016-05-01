@@ -5,29 +5,134 @@ var d3cola = cola.d3adaptor()
 var outer = d3.select("body").append("svg")
     .attr("pointer-events", "all");
 
-outer.append('rect')
-    .attr('class', 'background')
-    .attr('width', "100%")
-    .attr('height', "100%")
-    .call(d3.behavior.zoom().on("zoom", redraw));
 
-var vis = outer
-    .append('g')
-    .attr('transform', 'translate(800,400) scale(0.7)');
 
-function redraw() {
-    vis.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")");
+
+var data = window.data, nodeLookup = {};
+function start() {
+    createCheckBoxes();
+    parseDunnart(convertDataToGraph(data));
 }
 
-var groupsLayer = vis.append("g");
-var nodesLayer = vis.append("g");
-var linksLayer = vis.append("g");
+function convertDataToGraph(info) {
+    var graph = {
+        nodes: [],
+        links: [],
+        groups: [],
+        constraints: []
+    };
 
-var graph = window.data
-    , nodeLookup = {};
 
-for (var i = 0; i < graph.nodes.length; i++) {
-    var node = graph.nodes[i];
+    var classMap = Object.create(null);
+    //TODO move to typescript
+    //TODO refactor to work with real objects instead of many arguments
+
+    function getClass(className, label) {
+        if (!classMap[className]) {
+            var group = {
+                "leaves": [],
+                "style": "fill:#ffdd3c;fill-opacity:0.37254902000000001;stroke:#ffdd3c;stroke-opacity:1",
+                "padding": 10,
+                "label": className
+            };
+            graph.groups.push(group);
+
+            var node = {
+                "label": className,
+                "text": label,
+                "type": 'class',
+                "group": className
+            };
+            var index = graph.nodes.push(node) - 1;
+            group.leaves.push(index);
+            var cls = classMap[className] = Object.create(null);
+            cls.group = group;
+            cls.index = index;
+            cls.node = node;
+            cls.methods = Object.create(null);
+        }
+        return classMap[className];
+    }
+
+    function addCall(callerClass, callerMethod, calledClass, calledProperty, callLabel, callerLabel, calledLabel, callerClassText, calledClassText) {
+        var target = getProperty(callerClass, callerMethod, callerLabel, callerClassText);
+        var source = getProperty(calledClass, calledProperty, calledLabel, calledClassText);
+        //console.log(callerClass, '.', callerMethod, '->', calledClass, '.', calledProperty);
+        graph.links.push({
+            target: source.index,
+            source: target.index,
+            label: callLabel
+        });
+    }
+
+    function getProperty(className, propertyName, text, classLabel) {
+        var cls = getClass(className, classLabel);
+        if (!cls.methods[propertyName]) {
+            var node = {
+                "label": propertyName,
+                "text": text,
+                "type": 'method',
+                "group": className
+            };
+            var index = graph.nodes.push(node) - 1;
+            cls.group.leaves.push(index);
+            cls.methods[propertyName] = {
+                node: node,
+                index: index
+            };
+
+            graph.links.push({
+                target: index,
+                source: cls.index
+            });
+
+            if (index == undefined) {
+                console.log('getProperty', arguments);
+            }
+        }
+        return cls.methods[propertyName];
+    }
+
+    var res = '';
+    for (var i = 0; i < info.length; i++) {
+        var cls = info[i];
+        Object.keys(cls.methods).forEach(function (key) {
+            cls.methods[key].calls.forEach(function (call) {
+                if (cls.name != call.target && checkboxes[cls.name].checked && checkboxes[call.target].checked) {
+                    addCall(cls.name, key, call.target, call.name, call.text, cls.methods[key].text, '', cls.text, '');
+                }
+            });
+        })
+    }
+
+    return graph;
+}
+var checkboxes = {};
+
+function createCheckBoxes() {
+    var controls = document.getElementsByClassName('controls')[0];
+    var control = createCheckbox('all', 'all');
+    controls.appendChild(control);
+    control.addEventListener('change', function () {
+        var keys = Object.keys(checkboxes);
+        var check = !checkboxes[keys[0]].checked;
+        keys.forEach(function (key) {
+            checkboxes[key].checked = check;
+        });
+        rerender();
+    });
+    for (var i = 0; i < data.length; i++) {
+        var cls = data[i];
+        var control = createCheckbox(cls.name, i);
+        controls.appendChild(control);
+        var checkbox = control.querySelector('#group' + i);
+        checkboxes[cls.name] = checkbox;
+        checkbox.addEventListener('change', rerender);
+    }
+}
+
+function rerender() {
+    parseDunnart(convertDataToGraph(data));
 }
 
 function createCheckbox(label, index) {
@@ -42,7 +147,28 @@ function createCheckbox(label, index) {
     return div.firstChild;
 }
 
-function parseDunnart() {
+function parseDunnart(graph) {
+    outer.selectAll("*").remove();
+
+    function redraw() {
+        vis.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")");
+    }
+
+
+    outer.append('rect')
+        .attr('class', 'background')
+        .attr('width', "100%")
+        .attr('height', "100%")
+        .call(d3.behavior.zoom().on("zoom", redraw));
+
+    var vis = outer
+        .append('g')
+        .attr('transform', 'translate(800,400) scale(0.7)');
+
+    var groupsLayer = vis.append("g");
+    var nodesLayer = vis.append("g");
+    var linksLayer = vis.append("g");
+
     d3cola
         .nodes(graph.nodes)
         .links(graph.links)
@@ -52,30 +178,6 @@ function parseDunnart() {
         .avoidOverlaps(true)
         .start();
 
-    var controls = document.getElementsByClassName('controls')[0];
-    var checkboxes = {};
-    var control = createCheckbox('all', 'all');
-    controls.appendChild(control);
-    control.addEventListener('change', function () {
-        var keys = Object.keys(checkboxes);
-        var check = !checkboxes[keys[0]].checked;
-        keys.forEach(function (key) {
-            checkboxes[key].checked = check;
-        });
-        rerender();
-    });
-    for (var i = 0; i < graph.groups.length; i++) {
-        var group = graph.groups[i];
-        var control = createCheckbox(group.label, i);
-        controls.appendChild(control);
-        var checkbox = control.querySelector('#group' + i);
-        checkboxes[group.label] = checkbox;
-        checkbox.addEventListener('change', rerender);
-        for (var j = 0; j < group.leaves.length; j++) {
-            var leave = group.leaves[j];
-            leave.group = group.label;
-        }
-    }
 
 
     // define arrow markers for graph links
@@ -167,22 +269,6 @@ function parseDunnart() {
             return d.text;
         });
 
-    function rerender() {
-        node.attr('style', function (d) {
-            return checkboxes[d.group].checked ? 'display: inherit;' : 'display: none;';
-        });
-        link.attr('visibility', function (l) {
-            return checkboxes[l.source.group].checked && checkboxes[l.target.group].checked ? 'visible' : 'hidden'
-        });
-
-        label.attr('style', function (d) {
-            return checkboxes[d.group].checked ? 'display: inherit;' : 'display: none;';
-        });
-        group.attr('opacity', function (d) {
-            return checkboxes[d.label].checked ? '1' : '0';
-        });
-    }
-
     d3cola.on("tick", function () {
         node.each(function (d) {
             d.innerBounds = d.bounds.inflate(-margin);
@@ -193,8 +279,8 @@ function parseDunnart() {
         });
 
         link.attr("x1", function (d) {
-                return d.route.sourceIntersection.x;
-            })
+            return d.route.sourceIntersection.x;
+        })
             .attr("y1", function (d) {
                 return d.route.sourceIntersection.y;
             })
@@ -205,8 +291,8 @@ function parseDunnart() {
                 return d.route.arrowStart.y;
             })
             .attr('stroke-opacity', 0.5)
-            .attr('stroke-dasharray', function(d) {
-               return d.source.type=='class' || d.target.type =='class' ? '2,2' : '';
+            .attr('stroke-dasharray', function (d) {
+                return d.source.type == 'class' || d.target.type == 'class' ? '2,2' : '';
             })
 
         label.each(function (d) {
@@ -216,8 +302,8 @@ function parseDunnart() {
         });
 
         node.attr("x", function (d) {
-                return d.innerBounds.x;
-            })
+            return d.innerBounds.x;
+        })
             .attr("y", function (d) {
                 return d.innerBounds.y;
             })
@@ -230,16 +316,16 @@ function parseDunnart() {
 
         group
             .attr("x", function (d) {
-                return d.bounds.x+pad/2;
+                return d.bounds.x + pad / 2;
             })
             .attr("y", function (d) {
-                return d.bounds.y+pad/2;
+                return d.bounds.y + pad / 2;
             })
             .attr("width", function (d) {
-                return d.bounds.width()-pad;
+                return d.bounds.width() - pad;
             })
             .attr("height", function (d) {
-                return d.bounds.height()-pad;
+                return d.bounds.height() - pad;
             });
 
         label.attr("transform", function (d) {
