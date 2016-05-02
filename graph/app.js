@@ -131,8 +131,47 @@ function createCheckBoxes() {
     }
 }
 
+var previousGraph;
 function rerender() {
-    parseDunnart(convertDataToGraph(data));
+    var newGraph = convertDataToGraph(data);
+    copyProps(newGraph,previousGraph);
+    parseDunnart(newGraph);
+    previousGraph = newGraph;
+}
+
+function copyProps(newGraph,oldGraph) {
+    if(oldGraph) {
+        var nodeMap = {};
+        for (var i = 0; i < oldGraph.nodes.length; i++) {
+            var node = oldGraph.nodes[i];
+            nodeMap[node.label] = node;
+        }
+        var groupMap = {};
+        for (var i = 0; i < oldGraph.groups.length; i++) {
+            var group = oldGraph.groups[i];
+            groupMap[group.label] = group;
+        }
+        for (var i = 0; i < newGraph.nodes.length; i++) {
+            var node = newGraph.nodes[i];
+            var oldNode = nodeMap[node.label];
+            if(oldNode) {
+                node.x = oldNode.x;
+                node.y = oldNode.y;
+                node.width = oldNode.width;
+                node.height = oldNode.height;
+            }
+        }
+        for (var i = 0; i < newGraph.groups.length; i++) {
+            var group = newGraph.groups[i];
+            var oldGroup = groupMap[group.label];
+            if(oldGroup) {
+                group.x = oldGroup.x;
+                group.y = oldGroup.y;
+                group.width = oldGroup.width;
+                group.height = oldGroup.height;
+            }
+        }
+    }
 }
 
 function createCheckbox(label, index) {
