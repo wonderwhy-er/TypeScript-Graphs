@@ -6,8 +6,6 @@ var outer = d3.select("body").append("svg")
     .attr("pointer-events", "all");
 
 
-
-
 var data = window.data, nodeLookup = {};
 function start() {
     createCheckBoxes();
@@ -186,10 +184,15 @@ function createCheckbox(label, index) {
     return div.firstChild;
 }
 
+var startScale = 1;
+var startPosition = [700,350];
+
 function parseDunnart(graph) {
     outer.selectAll("*").remove();
 
     function redraw() {
+        startPosition = d3.event.translate;
+        startScale = d3.event.scale;
         vis.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")");
     }
 
@@ -198,11 +201,14 @@ function parseDunnart(graph) {
         .attr('class', 'background')
         .attr('width', "100%")
         .attr('height', "100%")
-        .call(d3.behavior.zoom().on("zoom", redraw));
+        .call(d3.behavior.zoom().scale(startScale).translate(startPosition).on("zoom", redraw));
+
+
 
     var vis = outer
         .append('g')
-        .attr('transform', 'translate(800,400) scale(0.7)');
+            .attr("transform", "translate(" + startPosition + ")" + " scale(" + startScale + ")");
+    //.attr('transform', 'translate(800,400) scale(0.7)');
 
     var groupsLayer = vis.append("g");
     var nodesLayer = vis.append("g");
