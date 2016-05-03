@@ -17,6 +17,7 @@
     stroke-width: 3px;
     opacity: 0.7;
     marker-end: url(#end-arrow);
+    cursor: hand;
 }
 
 .label {

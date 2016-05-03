@@ -15,20 +15,24 @@ function generateCouplingData(parsedData:{
     for (const sourceFile of parsedData.sourceFiles) {
         // Walk the tree to search for classes
         console.log('----' + sourceFile.fileName + '----');
-            ts.forEachChild(sourceFile, (node) => {
-                var newClasses = visit(node, sourceFile);
-                info = info.concat(newClasses);
-            })
+        ts.forEachChild(sourceFile, (node:ts.Node) => {
+            var newClasses = visit(node, sourceFile);
+            info = info.concat(newClasses);
+        })
     }
 
     interface IClass {
         text:string;
         name:string;
+        path:string;
+        line:string;
         methods:{[key:string]:IMethod};
     }
 
     interface IMethod {
         text:string,
+        path:string;
+        line:string;
         calls:ICall[]
     }
 
@@ -36,6 +40,8 @@ function generateCouplingData(parsedData:{
         target:string;
         name:string;
         text:string;
+        path:string;
+        line:string;
     }
 
     function visit(node:ts.Node, file:ts.SourceFile) {
@@ -55,13 +61,17 @@ function generateCouplingData(parsedData:{
         return {
             name: name,
             methods: getMethods(node, name, file),
-            text: node.getText()
+            text: node.getText(),
+            path: file.path,
+            line: file.getLineAndCharacterOfPosition(node.getStart(file)).line.toString()
         };
     }
 
     function getMethods(node:ts.Node, className:string, file:ts.SourceFile):{[key:string]:IMethod} {
         var methods:{[key:string]:IMethod} = {};
-        ts.forEachChild(node, (node) => {
+        ts.forEachChild(node
+    :
+        ts.Node, (node:ts.Node) => {
             //TODO public properties
             if (node.kind == ts.SyntaxKind.Constructor) {
                 methods['Constructor'] = {
@@ -79,10 +89,14 @@ function generateCouplingData(parsedData:{
             ) {
                 methods[getIdentifierName(node)] = {
                     text: node.getText(),
-                    calls: getCalls(node, className, file)
+                    calls: getCalls(node, className, file),
+                    path: file.path,
+                    line: file.getLineAndCharacterOfPosition(node.getStart(file)).line.toString()
                 };
             }
-        });
+        }
+    )
+        ;
         return methods;
     }
 
@@ -118,8 +132,8 @@ function generateCouplingData(parsedData:{
         }
 
         /*if (target == 'any') {
-            target = propertyOwner.getText();
-        }*/
+         target = propertyOwner.getText();
+         }*/
 
 
         var lineAndPos = file.getLineAndCharacterOfPosition(node.getStart());
@@ -130,6 +144,8 @@ function generateCouplingData(parsedData:{
             Property owner: ${propertyOwner.getText()},
             Property owner: ${tokenKindName(propertyOwner.kind)}
             `,
+            path: file.path,
+            line: file.getLineAndCharacterOfPosition(node.getStart(file)).line.toString(),
             name: getIdentifierName(node),
             target: target
         }

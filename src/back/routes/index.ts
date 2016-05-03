@@ -9,4 +9,10 @@ router.get('/couplings', function (req, res, next) {
     });
 });
 
+
+router.get('/webstorm', function(req,res,next) {
+    var childProcess = require('child_process');
+    childProcess.exec(`WebStorm.exe ${req.query.path} --line ${req.query.line}`);
+    res.send('ok');
+});
 export = router;
