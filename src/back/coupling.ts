@@ -1,8 +1,9 @@
-/// <reference path="typings/main.d.ts" />
+/// <reference path="../../typings/main.d.ts" />
 
 import {writeFileSync} from "fs";
 import * as ts from "typescript";
 import {parse, tokenKindName} from "./parse";
+import {startServer} from "./server";
 
 //TODO fix typings
 function generateCouplingData(parsedData:{
@@ -151,9 +152,10 @@ function generateCouplingData(parsedData:{
         });
     }
 
-    writeFileSync('graph/data.js', 'window.data = ' + JSON.stringify(info), 'UTF-8');
+    writeFileSync('compiled/public/js/coupling_data.js', 'window.data = ' + JSON.stringify(info), 'UTF-8');
+    var port = startServer();
     var childProcess = require('child_process');
-    childProcess.exec('start chrome ./graph/index.html');
+    childProcess.exec(`start chrome http://localhost:${port}/couplings`);
 }
 
 const fileNames = process.argv.slice(2);

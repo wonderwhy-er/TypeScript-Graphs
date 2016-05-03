@@ -1,0 +1,13 @@
+extends layout
+
+block head
+    link(rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/css/materialize.min.css" rel="stylesheet")
+    link(href="css/coupling.css" rel="stylesheet")
+
+block content
+    script(src="3rdparty/d3.v3.js")
+    script(src="3rdparty/cola.min.js")
+    script(src="js/coupling_data.js")
+    script(src='js/coupling.js')
+    div.controls
