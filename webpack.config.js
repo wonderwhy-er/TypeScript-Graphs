@@ -1,7 +1,8 @@
 var webpack = require('webpack');
 module.exports = {
     entry: {
-        project: './src/front/project.ts'
+        project: './src/front/project.ts',
+        couplings: './src/front/couplings.ts'
     },
     output: {
         path: __dirname + "/compiled/public/js",

@@ -6,6 +6,7 @@
   },
   "files": [
     "src/front/project.ts",
+    "src/front/couplings.ts",
     "typings/main.d.ts"
   ]
 }

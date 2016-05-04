@@ -15,22 +15,36 @@ class D {
 }
 
 class C {
-    c() {}
+    c() {
+    }
 }
 
 class B {
-    c() {}
+    c() {
+    }
+
     b() {
         return new B();
     }
-    fire(){}
+
+    fire() {
+    }
 }
 
 class A {
+    private cb;
+
     a(b:B):C {
         return new C();
     }
-    onEvent(cb){}
+
+    onEvent(cb) {
+        this.cb = cb;
+    }
+
+    trigger() {
+        this.cb;
+    }
 
     create<D>(D:Constructor<D>) {
         return new D();

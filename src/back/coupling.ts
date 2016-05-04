@@ -4,8 +4,8 @@ import {writeFileSync} from "fs";
 import * as ts from "typescript";
 import {parse, tokenKindName} from "./parse";
 import {startServer} from "./server";
+import {IClass, IMethod, ICall} from "../middle/Metadata";
 
-//TODO fix typings
 function generateCouplingData(parsedData:{
     sourceFiles:ts.SourceFile[],
     checker:ts.TypeChecker
@@ -19,29 +19,6 @@ function generateCouplingData(parsedData:{
             var newClasses = visit(node, sourceFile);
             info = info.concat(newClasses);
         })
-    }
-
-    interface IClass {
-        text:string;
-        name:string;
-        path:string;
-        line:string;
-        methods:{[key:string]:IMethod};
-    }
-
-    interface IMethod {
-        text:string,
-        path:string;
-        line:string;
-        calls:ICall[]
-    }
-
-    interface ICall {
-        target:string;
-        name:string;
-        text:string;
-        path:string;
-        line:string;
     }
 
     function visit(node:ts.Node, file:ts.SourceFile) {
@@ -69,33 +46,35 @@ function generateCouplingData(parsedData:{
 
     function getMethods(node:ts.Node, className:string, file:ts.SourceFile):{[key:string]:IMethod} {
         var methods:{[key:string]:IMethod} = {};
-        ts.forEachChild(node
-    :
-        ts.Node, (node:ts.Node) => {
-            //TODO public properties
-            if (node.kind == ts.SyntaxKind.Constructor) {
-                methods['Constructor'] = {
-                    text: node.getText(),
-                    calls: getCalls(node, className, file)
-                };
-            } else if (node.kind == ts.SyntaxKind.MethodDeclaration) {
-                methods[getIdentifierName(node)] = {
-                    text: node.getText(),
-                    calls: getCalls(node, className, file)
-                };
-            } else if (
-                node.kind == ts.SyntaxKind.GetAccessor ||
-                node.kind == ts.SyntaxKind.SetAccessor
-            ) {
-                methods[getIdentifierName(node)] = {
-                    text: node.getText(),
-                    calls: getCalls(node, className, file),
-                    path: file.path,
-                    line: file.getLineAndCharacterOfPosition(node.getStart(file)).line.toString()
-                };
+        ts.forEachChild(node, (node:ts.Node) => {
+                //TODO public properties
+                if (node.kind == ts.SyntaxKind.Constructor) {
+                    methods['Constructor'] = {
+                        text: node.getText(),
+                        calls: getCalls(node, className, file),
+                        path: file.path,
+                        line: file.getLineAndCharacterOfPosition(node.getStart(file)).line.toString()
+                    };
+                } else if (node.kind == ts.SyntaxKind.MethodDeclaration) {
+                    methods[getIdentifierName(node)] = {
+                        text: node.getText(),
+                        calls: getCalls(node, className, file),
+                        path: file.path,
+                        line: file.getLineAndCharacterOfPosition(node.getStart(file)).line.toString()
+                    };
+                } else if (
+                    node.kind == ts.SyntaxKind.GetAccessor ||
+                    node.kind == ts.SyntaxKind.SetAccessor
+                ) {
+                    methods[getIdentifierName(node)] = {
+                        text: node.getText(),
+                        calls: getCalls(node, className, file),
+                        path: file.path,
+                        line: file.getLineAndCharacterOfPosition(node.getStart(file)).line.toString()
+                    };
+                }
             }
-        }
-    )
+        )
         ;
         return methods;
     }
@@ -131,9 +110,9 @@ function generateCouplingData(parsedData:{
             target = className;
         }
 
-        /*if (target == 'any') {
-         target = propertyOwner.getText();
-         }*/
+        if (target == 'any') {
+            target = propertyOwner.getText()+'(any)';
+        }
 
 
         var lineAndPos = file.getLineAndCharacterOfPosition(node.getStart());
@@ -168,6 +147,51 @@ function generateCouplingData(parsedData:{
         });
     }
 
+    //TODO for now suspected sources are inherited/dynamic or non function properties, should be fixed
+    function findMissingClassesAndProperties(info:IClass[]) {
+        var classMap = {};
+        for (var i = 0; i < info.length; i++) {
+            var cls = info[i];
+            classMap[cls.name] = cls;
+        }
+
+        for (var i = 0; i < info.length; i++) {
+            var cls = info[i];
+            var methodNames = Object.keys(cls.methods);
+            for (var j = 0; j < methodNames.length; j++) {
+                var methodName = methodNames[j];
+                var method:IMethod = cls.methods[methodName];
+                for (var k = 0; k < method.calls.length; k++) {
+                    var call = method.calls[k];
+                    if (!classMap.hasOwnProperty(call.target)) {
+                        var missingClass:IClass = {
+                            text: "",
+                            name: call.target,
+                            path: undefined,
+                            line: undefined,
+                            methods: Object.create(null)
+                        }
+                        info.push(missingClass);
+                        classMap[call.target] = missingClass;
+                    }
+                    var targetClass = classMap[call.target];
+
+                    if (!targetClass.methods[call.name]) {
+                        var missingMethod:IMethod = {
+                            text: '',
+                            path: targetClass.path;
+                        line:targetClass.line;
+                        calls:[]
+                    }
+                        ;
+                        targetClass.methods[call.name] = missingMethod;
+                    }
+                }
+            }
+        }
+    }
+
+    findMissingClassesAndProperties(info);
     writeFileSync('compiled/public/js/coupling_data.js', 'window.data = ' + JSON.stringify(info), 'UTF-8');
     var port = startServer();
     var childProcess = require('child_process');

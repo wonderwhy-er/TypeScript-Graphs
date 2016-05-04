@@ -17,7 +17,7 @@
     stroke-width: 3px;
     opacity: 0.7;
     marker-end: url(#end-arrow);
-    cursor: hand;
+    cursor: pointer;
 }
 
 .label {
@@ -41,9 +41,20 @@ svg {
     height: 100%;
 }
 
-.controls {
+.left_panel {
     z-index: 10;
     position: fixed;
     left: 0;
     top: 0;
+    background-color: white;
+    overflow-y: auto;
+    overflow-x: hidden;
+    bottom: 0;
+    resize: horizontal;
+    width: 200px;
+    box-shadow: 2px 0px 5px black;
+}
+
+.controls {
+
 }
