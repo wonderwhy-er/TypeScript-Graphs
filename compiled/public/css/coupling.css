@@ -4,6 +4,14 @@
     fill: white;
 }
 
+.full_width {
+    width: 100%;
+}
+
+.container .row.full_width {
+    margin: 0;
+}
+
 .node {
     stroke: black;
     stroke-width: 1px;

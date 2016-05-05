@@ -11,4 +11,18 @@ block content
     script(src="js/coupling_data.js")
     script(src='js/couplings.js')
     div.left_panel
+        nav
+            .nav-wrapper
+                form
+                    .input-field
+                        input#search(type='search', required='')
+                        label(for='search')
+                            i.material-icons search
+                        i.material-icons close
+        div.row.full_width
+            a#check.waves-effect.waves-light.btn.col.s6
+                i.small.material-icons check
+            a#uncheck.waves-effect.waves-light.btn.col.s6
+                i.small.material-icons not_interested
+
         ul.controls

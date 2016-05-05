@@ -140,17 +140,42 @@ var d3 = window['d3'];
         return graph;
     }
 
-    var checkboxes = {};
+    var checkboxes:{[key:string]:HTMLInputElement} = {};
 
     function createCheckBoxes() {
+        var search:HTMLInputElement = <HTMLInputElement>document.getElementById('search');
+        var close = (<HTMLElement>document.querySelector('#search ~ i'));
+        close.onclick = () => {
+            search.value = '';
+            search.onkeyup(undefined);
+        };
+        search.onkeyup = () => {
+            var pattern = new RegExp(search.value);
+            Object.keys(checkboxes).forEach((key) => {
+                if(pattern.test(key)) {
+                    checkboxes[key].parentElement.style.display = 'block';
+                } else {
+                    checkboxes[key].parentElement.style.display = 'none';
+                }
+            })
+        };
+
         var controls = document.getElementsByClassName('controls')[0];
-        var control = createCheckbox('all', 'all');
-        controls.appendChild(control);
-        control.addEventListener('change', function () {
+        document.getElementById('check').addEventListener('click', function () {
             var keys = Object.keys(checkboxes);
-            var check = !checkboxes[keys[0]].checked;
             keys.forEach(function (key) {
-                checkboxes[key].checked = check;
+                if(!(checkboxes[key].parentElement.style.display =='none')) {
+                    checkboxes[key].checked = true;
+                }
+            });
+            rerender();
+        });
+        document.getElementById('uncheck').addEventListener('click', function () {
+            var keys = Object.keys(checkboxes);
+            keys.forEach(function (key) {
+                if(!(checkboxes[key].parentElement.style.display == 'none')) {
+                    checkboxes[key].checked = false;
+                }
             });
             rerender();
         });
